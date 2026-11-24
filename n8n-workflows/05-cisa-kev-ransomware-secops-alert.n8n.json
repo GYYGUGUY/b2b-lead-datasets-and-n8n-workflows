@@ -1,0 +1,113 @@
+{
+  "name": "Spotless Studios — CISA KEV Ransomware CVE SecOps Slack Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Real-Time CISA KEV Exploited CVE Alerting\n\n1. Set `APIFY_API_TOKEN` in n8n environment variables.\n2. Polls CISA Known Exploited Vulnerabilities every 6 hours with `onlyNewItems: true` so you only pay for newly added CVEs.\n3. Connect your Slack `#secops-alerts` channel for immediate patching notifications.\n\nActor: https://apify.com/spotless_studios/cisa-kev-cves-scraper",
+        "height": 240,
+        "width": 440,
+        "color": 2
+      },
+      "id": "note-cisa-05",
+      "name": "Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 120]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "trigger-cisa-05",
+      "name": "Every 6 Hours SecOps Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/spotless_studios~cisa-kev-cves-scraper/run-sync-get-dataset-items?token={{$env.APIFY_API_TOKEN}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"mode\": \"cisa_kev\",\n  \"ransomwareOnly\": true,\n  \"onlyNewItems\": true,\n  \"stateKey\": \"n8n-cisa-kev-secops\",\n  \"maxResults\": 50\n}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "apify-cisa-05",
+      "name": "Run CISA KEV & NVD CVEs Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 440]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-cve-id",
+              "leftValue": "={{$json.cveId}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-cisa-05",
+      "name": "Filter Newly Added KEVs",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [740, 440]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "#secops-alerts",
+          "mode": "name"
+        },
+        "text": "=🚨 *CISA KEV Alert:* {{$json.cveId}} ({{$json.vendorProject}} — {{$json.product}})\n*Vulnerability:* {{$json.vulnerabilityName}}\n*Ransomware Linked:* {{$json.knownRansomwareCampaignUse}} · *Due Date:* {{$json.dueDate}}\n*Action:* {{$json.requiredAction}}",
+        "otherOptions": {}
+      },
+      "id": "slack-cisa-05",
+      "name": "Post SecOps Alert to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1000, 420]
+    }
+  ],
+  "connections": {
+    "Every 6 Hours SecOps Trigger": {
+      "main": [[{ "node": "Run CISA KEV & NVD CVEs Scraper", "type": "main", "index": 0 }]]
+    },
+    "Run CISA KEV & NVD CVEs Scraper": {
+      "main": [[{ "node": "Filter Newly Added KEVs", "type": "main", "index": 0 }]]
+    },
+    "Filter Newly Added KEVs": {
+      "main": [[{ "node": "Post SecOps Alert to Slack", "type": "main", "index": 0 }], []]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "apify" }, { "name": "security" }, { "name": "cisa-kev" }]
+}

@@ -1,0 +1,122 @@
+{
+  "name": "Spotless Studios — Paid Skool Communities & Creator Leads to Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Skool Paid Communities & Creator Lead Scout\n\n1. Set `APIFY_API_TOKEN` in n8n environment variables.\n2. Monitors newly launched paid Skool communities matching your niche keywords (`searchQueries`) with 150+ members.\n3. Note: Skool actor uses Playwright — allocate >= 4096 MB memory via `?memory=4096` in the URL.\n\nActor: https://apify.com/spotless_studios/skool-communities-scraper",
+        "height": 240,
+        "width": 440,
+        "color": 3
+      },
+      "id": "note-skool-04",
+      "name": "Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 120]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [2],
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "id": "trigger-skool-04",
+      "name": "Weekly Creator Scout Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/spotless_studios~skool-communities-scraper/run-sync-get-dataset-items?memory=4096&token={{$env.APIFY_API_TOKEN}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"searchQueries\": [\"ai automation\", \"saas\", \"b2b\"],\n  \"price\": \"paid\",\n  \"minMembers\": 150,\n  \"includeDetails\": true,\n  \"onlyNewItems\": true,\n  \"stateKey\": \"n8n-skool-paid\",\n  \"maxResults\": 100\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "apify-skool-04",
+      "name": "Run Skool Communities Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 440]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-skool-paid",
+              "leftValue": "={{$json.membersCount || $json.members}}",
+              "rightValue": 150,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-skool-04",
+      "name": "Filter 150+ Member Communities",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [740, 440]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Skool Paid Creators",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": ["url"]
+        },
+        "options": {}
+      },
+      "id": "sheets-skool-04",
+      "name": "Save Creator Leads to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1000, 420]
+    }
+  ],
+  "connections": {
+    "Weekly Creator Scout Trigger": {
+      "main": [[{ "node": "Run Skool Communities Scraper", "type": "main", "index": 0 }]]
+    },
+    "Run Skool Communities Scraper": {
+      "main": [[{ "node": "Filter 150+ Member Communities", "type": "main", "index": 0 }]]
+    },
+    "Filter 150+ Member Communities": {
+      "main": [[{ "node": "Save Creator Leads to Sheets", "type": "main", "index": 0 }], []]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "apify" }, { "name": "skool" }, { "name": "creator-economy" }]
+}

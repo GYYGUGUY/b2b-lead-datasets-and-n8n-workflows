@@ -1,0 +1,113 @@
+{
+  "name": "Spotless Studios — Daily US SLED Gov RFP & Bid Alerts to Slack",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Daily US State & Local Gov RFP Alerts (Spotless Studios)\n\n1. Set your Apify token as an environment variable `APIFY_API_TOKEN` (or paste `?token=apify_api_...` into the HTTP Request URL).\n2. Customize `openGovStates` (`[\"TX\",\"FL\",\"CA\"]`) and `includeKeywords` in the HTTP Request node.\n3. Connect your Slack credential and choose your `#gov-bids` channel.\n\n**Cost note:** `onlyNewItems: true` remembers seen bids across runs, so daily schedules typically cost $0.04–$0.24/day.\nActor: https://apify.com/spotless_studios/sled-procurement-scraper",
+        "height": 260,
+        "width": 440,
+        "color": 4
+      },
+      "id": "note-sled-01",
+      "name": "Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 120]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "trigger-sled-01",
+      "name": "Daily 08:00 Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/spotless_studios~sled-procurement-scraper/run-sync-get-dataset-items?token={{$env.APIFY_API_TOKEN}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"platforms\": [\"opengov\", \"bonfire\"],\n  \"openGovStates\": [\"TX\", \"FL\", \"CA\"],\n  \"statuses\": [\"open\"],\n  \"includeKeywords\": [\"software\", \"IT\", \"cloud\", \"cybersecurity\", \"data\"],\n  \"minDaysUntilClose\": 5,\n  \"onlyNewItems\": true,\n  \"stateKey\": \"n8n-daily-sled-alert\",\n  \"maxResults\": 50\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "apify-sled-01",
+      "name": "Run SLED Gov Bids Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 440]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-title-present",
+              "leftValue": "={{$json.title}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-sled-01",
+      "name": "Filter Valid New Bids",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [740, 440]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "#gov-bids",
+          "mode": "name"
+        },
+        "text": "=🏛️ *New SLED RFP:* {{$json.title}}\n*Agency:* {{$json.organizationName}} ({{$json.city}}, {{$json.state}})\n*Type:* {{$json.solicitationTypeLabel || $json.solicitationType}} · *Closes in:* {{$json.daysUntilClose}} days\n*Portal:* {{$json.portalUrl}}",
+        "otherOptions": {}
+      },
+      "id": "slack-sled-01",
+      "name": "Send Slack RFP Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1000, 420]
+    }
+  ],
+  "connections": {
+    "Daily 08:00 Trigger": {
+      "main": [[{ "node": "Run SLED Gov Bids Scraper", "type": "main", "index": 0 }]]
+    },
+    "Run SLED Gov Bids Scraper": {
+      "main": [[{ "node": "Filter Valid New Bids", "type": "main", "index": 0 }]]
+    },
+    "Filter Valid New Bids": {
+      "main": [[{ "node": "Send Slack RFP Alert", "type": "main", "index": 0 }], []]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "apify" }, { "name": "lead-gen" }, { "name": "govtech" }]
+}

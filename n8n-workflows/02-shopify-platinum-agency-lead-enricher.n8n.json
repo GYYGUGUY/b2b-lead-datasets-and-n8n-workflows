@@ -1,0 +1,104 @@
+{
+  "name": "Spotless Studios — Shopify Platinum & Premier Agency Lead Enricher to Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Shopify Platinum & Premier Agency Lead Pipeline (v0.2)\n\n1. Set `APIFY_API_TOKEN` in your n8n environment variables.\n2. Runs `shopify-partners-scraper` directly against `/tiers/platinum` and `/tiers/premier` with website email & social fallback enabled.\n3. Connects to Google Sheets (replace `YOUR_SHEET_ID`) for instant CRM/Clay/Smartlead outreach.\n\nActor: https://apify.com/spotless_studios/shopify-partners-scraper",
+        "height": 250,
+        "width": 450,
+        "color": 5
+      },
+      "id": "note-shopify-02",
+      "name": "Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 120]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [1],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "trigger-shopify-02",
+      "name": "Weekly Monday Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/spotless_studios~shopify-partners-scraper/run-sync-get-dataset-items?token={{$env.APIFY_API_TOKEN}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"servicePaths\": [\"tiers/platinum\", \"tiers/premier\"],\n  \"tiers\": [\"platinum\", \"premier\"],\n  \"enrichDetails\": true,\n  \"enrichWebsiteContacts\": true,\n  \"requireEmail\": true,\n  \"onlyNewItems\": true,\n  \"stateKey\": \"n8n-shopify-partners\",\n  \"maxResults\": 100\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "apify-shopify-02",
+      "name": "Run Shopify Partners Scraper v0.2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 440]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(({ json }) => ({\n  json: {\n    businessName: json.businessName || '',\n    partnerTier: json.partnerTier || '',\n    contactEmail: json.contactEmail || '',\n    contactPhone: json.contactPhone || '',\n    websiteUrl: json.websiteUrl || '',\n    employeeCountRange: json.employeeCountRange || '',\n    activeCollaborations: json.activeCollaborations || '',\n    acceptingNewClients: json.acceptingNewClients ?? '',\n    location: json.location || '',\n    country: json.country || '',\n    linkedinUrl: (json.socialLinks || []).find((u) => /linkedin\\.com/i.test(u)) || '',\n    featuredClients: (json.featuredClients || []).map((c) => c.title).filter(Boolean).slice(0, 4).join('; '),\n    topServices: (json.services || []).slice(0, 4).join('; '),\n    profileUrl: json.url || ''\n  }\n}));"
+      },
+      "id": "code-shopify-02",
+      "name": "Format Agency Lead Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 440]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Shopify Agencies",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": ["profileUrl"]
+        },
+        "options": {}
+      },
+      "id": "sheets-shopify-02",
+      "name": "Upsert to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1000, 440]
+    }
+  ],
+  "connections": {
+    "Weekly Monday Trigger": {
+      "main": [[{ "node": "Run Shopify Partners Scraper v0.2", "type": "main", "index": 0 }]]
+    },
+    "Run Shopify Partners Scraper v0.2": {
+      "main": [[{ "node": "Format Agency Lead Row", "type": "main", "index": 0 }]]
+    },
+    "Format Agency Lead Row": {
+      "main": [[{ "node": "Upsert to Google Sheets", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "apify" }, { "name": "shopify" }, { "name": "b2b-leads" }]
+}

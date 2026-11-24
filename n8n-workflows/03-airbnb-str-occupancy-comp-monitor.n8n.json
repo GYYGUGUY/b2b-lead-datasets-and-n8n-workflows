@@ -1,0 +1,93 @@
+{
+  "name": "Spotless Studios — Airbnb 365-Day STR Occupancy & Rate Comp Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Airbnb Forward Calendar & Occupancy Monitor\n\n1. Set `APIFY_API_TOKEN` in n8n environment variables.\n2. Edit `locations` (e.g. `[\"Austin, TX\", \"Scottsdale, AZ\"]`) in the HTTP Request node.\n3. Replace the final Webhook URL with your BI/Airtable/Notion/Slack endpoint to ingest 30/90/365-day STR occupancy metrics.\n\nActor: https://apify.com/spotless_studios/airbnb-calendar-scraper",
+        "height": 240,
+        "width": 440,
+        "color": 6
+      },
+      "id": "note-airbnb-03",
+      "name": "Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 120]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "id": "trigger-airbnb-03",
+      "name": "Daily STR Sync Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/spotless_studios~airbnb-calendar-scraper/run-sync-get-dataset-items?token={{$env.APIFY_API_TOKEN}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"locations\": [\"Austin, TX\"],\n  \"onlySuperhosts\": true,\n  \"minRating\": 4.8,\n  \"calendarMonths\": 12,\n  \"enrichRoomDetails\": true,\n  \"maxResults\": 50\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "apify-airbnb-03",
+      "name": "Run Airbnb Calendar Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 440]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(({ json }) => ({\n  json: {\n    listingId: json.listingId || json.id,\n    title: json.title || json.name,\n    location: json.location || json.city,\n    isSuperhost: Boolean(json.isSuperhost),\n    rating: json.rating ?? null,\n    reviewsCount: json.reviewsCount ?? 0,\n    occupancy30dPct: json.occupancy30dPct ?? json.trailingOccupancy30D ?? null,\n    occupancy90dPct: json.occupancy90dPct ?? json.trailingOccupancy90D ?? null,\n    nightlyPriceUsd: json.nightlyPrice ?? json.priceUsd ?? null,\n    highDemandFlag: Number(json.occupancy30dPct ?? json.trailingOccupancy30D ?? 0) >= 70,\n    url: json.url || '',\n    scrapedAt: json.scrapedAt\n  }\n}));"
+      },
+      "id": "code-airbnb-03",
+      "name": "Compute STR Comp Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://example.com/your-str-analytics-webhook",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "webhook-airbnb-03",
+      "name": "Push Comps to Analytics Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 440]
+    }
+  ],
+  "connections": {
+    "Daily STR Sync Trigger": {
+      "main": [[{ "node": "Run Airbnb Calendar Scraper", "type": "main", "index": 0 }]]
+    },
+    "Run Airbnb Calendar Scraper": {
+      "main": [[{ "node": "Compute STR Comp Summary", "type": "main", "index": 0 }]]
+    },
+    "Compute STR Comp Summary": {
+      "main": [[{ "node": "Push Comps to Analytics Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "apify" }, { "name": "airbnb" }, { "name": "real-estate" }]
+}
