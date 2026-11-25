@@ -6,7 +6,7 @@ Open-source n8n automation templates and free 50-row B2B sample CSV datasets pow
 
 ---
 
-## 📦 Ready-to-Import n8n Workflows (`n8n-workflows/`)
+## 📦 7 Ready-to-Import n8n Workflows (`n8n-workflows/`)
 
 Import any `.n8n.json` file directly into n8n (**Workflows → Import from File**), set `APIFY_API_TOKEN` in your n8n environment variables, and run on a schedule:
 
@@ -17,6 +17,8 @@ Import any `.n8n.json` file directly into n8n (**Workflows → Import from File*
 | [`03-airbnb-str-occupancy-comp-monitor.n8n.json`](n8n-workflows/03-airbnb-str-occupancy-comp-monitor.n8n.json) | Daily 07:00 | 30d/90d/365d STR occupancy & nightly rate comps → Webhook | [Airbnb Calendar](https://apify.com/spotless_studios/airbnb-calendar-scraper) |
 | [`04-skool-paid-community-creator-scout.n8n.json`](n8n-workflows/04-skool-paid-community-creator-scout.n8n.json) | Weekly Tue | Paid 150+ member Skool communities & owner socials → Google Sheets | [Skool Communities](https://apify.com/spotless_studios/skool-communities-scraper) |
 | [`05-cisa-kev-ransomware-secops-alert.n8n.json`](n8n-workflows/05-cisa-kev-ransomware-secops-alert.n8n.json) | Every 6h | Newly added CISA KEV ransomware vulnerabilities → Slack | [CISA KEV & NVD CVEs](https://apify.com/spotless_studios/cisa-kev-cves-scraper) |
+| [`06-flippa-saas-ma-deal-scout.n8n.json`](n8n-workflows/06-flippa-saas-ma-deal-scout.n8n.json) | Daily 09:00 | Profitable Flippa SaaS M&A listings (verified revenue) → Slack | [Flippa Businesses](https://apify.com/spotless_studios/flippa-businesses-scraper) |
+| [`07-webflow-certified-agency-lead-sync.n8n.json`](n8n-workflows/07-webflow-certified-agency-lead-sync.n8n.json) | Weekly Wed | US/UK Webflow Certified agencies accepting projects → Google Sheets | [Webflow Experts](https://apify.com/spotless_studios/webflow-experts-scraper) |
 
 ---
 

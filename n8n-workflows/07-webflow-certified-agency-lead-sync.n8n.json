@@ -1,0 +1,104 @@
+{
+  "name": "Spotless Studios — Webflow Certified Agency Lead Sync to Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Webflow Certified & Premium Agency Lead Sync\n\n1. Set `APIFY_API_TOKEN` in your n8n environment variables.\n2. Monitors newly certified US/UK Webflow agencies accepting new projects (`onlyNewItems: true`) with hourly rates and websites.\n3. Upserts leads directly into Google Sheets for outbound or partnership outreach.\n\nActor: https://apify.com/spotless_studios/webflow-experts-scraper",
+        "height": 240,
+        "width": 440,
+        "color": 5
+      },
+      "id": "note-webflow-07",
+      "name": "Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 120]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [3],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "trigger-webflow-07",
+      "name": "Weekly Wednesday Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/spotless_studios~webflow-experts-scraper/run-sync-get-dataset-items?token={{$env.APIFY_API_TOKEN}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"businessTypes\": [\"Agency\"],\n  \"countries\": [\"United States\", \"United Kingdom\"],\n  \"acceptingNewProjectsOnly\": true,\n  \"includeDetails\": true,\n  \"onlyNewItems\": true,\n  \"stateKey\": \"n8n-webflow-agencies\",\n  \"maxResults\": 100\n}",
+        "options": {
+          "timeout": 240000
+        }
+      },
+      "id": "apify-webflow-07",
+      "name": "Run Webflow Experts Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 440]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(({ json }) => ({\n  json: {\n    name: json.name || '',\n    tier: json.tier || '',\n    website: json.website || '',\n    inquiryEmail: json.inquiryEmail || '',\n    city: json.city || '',\n    country: json.country || '',\n    minimumBudgetUsd: json.minimumBudgetUsd ?? '',\n    hourlyDesignRateUsd: json.hourlyDesignRateUsd ?? '',\n    hourlyDevelopmentRateUsd: json.hourlyDevelopmentRateUsd ?? '',\n    services: (json.services || []).slice(0, 5).join('; '),\n    profileUrl: json.profileUrl || ''\n  }\n}));"
+      },
+      "id": "code-webflow-07",
+      "name": "Normalize Webflow Agency Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 440]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Webflow Agencies",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": ["profileUrl"]
+        },
+        "options": {}
+      },
+      "id": "sheets-webflow-07",
+      "name": "Upsert to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1000, 440]
+    }
+  ],
+  "connections": {
+    "Weekly Wednesday Trigger": {
+      "main": [[{ "node": "Run Webflow Experts Scraper", "type": "main", "index": 0 }]]
+    },
+    "Run Webflow Experts Scraper": {
+      "main": [[{ "node": "Normalize Webflow Agency Row", "type": "main", "index": 0 }]]
+    },
+    "Normalize Webflow Agency Row": {
+      "main": [[{ "node": "Upsert to Google Sheets", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "apify" }, { "name": "webflow" }, { "name": "b2b-leads" }]
+}

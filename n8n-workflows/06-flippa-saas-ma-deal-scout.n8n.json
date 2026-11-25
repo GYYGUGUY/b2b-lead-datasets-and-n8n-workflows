@@ -1,0 +1,113 @@
+{
+  "name": "Spotless Studios — Flippa Profitable SaaS M&A Deal Scout to Slack",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Flippa SaaS & Online Business M&A Deal Scout\n\n1. Set `APIFY_API_TOKEN` in your n8n environment variables.\n2. Monitors newly listed or price-reduced profitable SaaS businesses on Flippa (`onlyNewItems: true`) with verified financials and EBITDA multiples.\n3. Posts matching acquisition targets directly to your `#deal-flow` Slack channel.\n\nActor: https://apify.com/spotless_studios/flippa-businesses-scraper",
+        "height": 240,
+        "width": 440,
+        "color": 4
+      },
+      "id": "note-flippa-06",
+      "name": "Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 120]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "trigger-flippa-06",
+      "name": "Daily 09:00 Deal Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/spotless_studios~flippa-businesses-scraper/run-sync-get-dataset-items?token={{$env.APIFY_API_TOKEN}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"propertyTypes\": [\"saas\"],\n  \"verifiedRevenueOnly\": true,\n  \"onlyNewItems\": true,\n  \"stateKey\": \"n8n-flippa-saas-deals\",\n  \"maxResults\": 50\n}",
+        "options": {
+          "timeout": 240000
+        }
+      },
+      "id": "apify-flippa-06",
+      "name": "Run Flippa Businesses Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 440]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-flippa-title",
+              "leftValue": "={{$json.title}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-flippa-06",
+      "name": "Filter New SaaS Listings",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [740, 440]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "#deal-flow",
+          "mode": "name"
+        },
+        "text": "=💼 *New Flippa SaaS Deal:* {{$json.title}}\n*Asking Price:* ${{$json.price}} · *Monthly Profit:* ${{$json.profitPerMonth || 'N/A'}} · *Multiple:* {{$json.profitMultiple || 'N/A'}}x\n*Link:* {{$json.url}}",
+        "otherOptions": {}
+      },
+      "id": "slack-flippa-06",
+      "name": "Post Deal to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1000, 420]
+    }
+  ],
+  "connections": {
+    "Daily 09:00 Deal Trigger": {
+      "main": [[{ "node": "Run Flippa Businesses Scraper", "type": "main", "index": 0 }]]
+    },
+    "Run Flippa Businesses Scraper": {
+      "main": [[{ "node": "Filter New SaaS Listings", "type": "main", "index": 0 }]]
+    },
+    "Filter New SaaS Listings": {
+      "main": [[{ "node": "Post Deal to Slack", "type": "main", "index": 0 }], []]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "apify" }, { "name": "flippa" }, { "name": "m-and-a" }]
+}
