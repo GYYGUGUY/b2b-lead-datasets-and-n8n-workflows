@@ -1,6 +1,6 @@
 # Spotless Studios — B2B Lead Datasets & n8n Workflows
 
-Open-source n8n automation templates and free 50-row B2B sample CSV datasets powered by **[Spotless Studios' 58 Live Apify Scrapers](https://apify.com/spotless_studios)**.
+Open-source n8n automation templates and free 50-row B2B sample CSV datasets powered by **[Spotless Studios' 59 Live Apify Scrapers](https://apify.com/spotless_studios)**.
 
 🌐 **Interactive Storefront & Live CSV Previews:** https://gyyguguy.github.io/b2b-lead-datasets-and-n8n-workflows/
 
@@ -36,4 +36,4 @@ Inspect or import directly into Clay, Smartlead, Instantly, HubSpot, or Excel:
 Want the complete deduplicated CSV packs (**870 verified rows across all 4 packs for $129**, or **$49/pack**) delivered instantly without running scrapers, or a custom daily/hourly CRM/BigQuery/Slack feed?
 
 👉 **Email:** [spotless.studios.info@gmail.com](mailto:spotless.studios.info@gmail.com?subject=Full%20B2B%20CSV%20Pack%20%2F%20Custom%20Feed)  
-👉 **Apify Store Portfolio (58 Public Actors):** https://apify.com/spotless_studios
+👉 **Apify Store Portfolio (59 Public Actors):** https://apify.com/spotless_studios
